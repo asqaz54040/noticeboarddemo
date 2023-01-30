@@ -58,6 +58,11 @@
 									<strong>截止日期</strong>
 								</div>
 							</td>
+							<td id="color">
+								<div align="center">
+									<strong>附件下載</strong>
+								</div>
+							</td>
 							
 						</tr>
 					
@@ -74,6 +79,9 @@
 							</td>
 							<td>
 								<div align="center">${page.expirationDate}</div>
+							</td>
+							<td>
+								<div align="center"><a href="${contextRoot}/download?id=${page.id}">${page.attachName}</a></div>
 							</td>
 						</tr>
 					

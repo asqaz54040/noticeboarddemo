@@ -1,22 +1,32 @@
 package tw.com.sam.controller;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+import javax.servlet.ServletOutputStream;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.support.PagedListHolder;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.FileCopyUtils;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -51,21 +61,36 @@ public class NoticeboardController {
 		return "/addnotice";
 	}
 
+//	@PostMapping("/add")
+//	public String addNotice(@ModelAttribute("NoticeboardBean") NoticeboardBean noticeboard) {
+//		
+//		nService.insert(noticeboard);
+//		return "redirect:/index";
+//	}
+	
 	@PostMapping("/add")
-	public String addNotice(@ModelAttribute("NoticeboardBean") NoticeboardBean noticeboard) {
-		
-		nService.insert(noticeboard);
-		return "redirect:/index";
+	public String addNote(@ModelAttribute("NoticeboardBean") NoticeboardBean noticeboard,BindingResult result,
+	                      @RequestParam("attach") MultipartFile attach) throws IOException {
+		String fileName=attach.getOriginalFilename();
+		InputStream fileInputStream=attach.getInputStream();
+//		String extension = FilenameUtils.getExtension(fileName);
+		byte [] attachUpload = FileCopyUtils.copyToByteArray(fileInputStream);
+		noticeboard.setAttachName(fileName);
+		noticeboard.setAttach(attachUpload);
+	    nService.insert(noticeboard);
+	    return "redirect:/index";
 	}
 	
-//	@PostMapping("/add")
-//	public String addNote(@ModelAttribute("NoticeboardBean") NoticeboardBean noticeboard,
-//	                      @RequestParam("attach") MultipartFile attach) throws IOException {
-//
-//	    noticeboard.setAttach(attach.getBytes());
-//	    nService.insert(noticeboard);
-//	    return "redirect:/index";
-//	}
+	@GetMapping("/download")
+	public ResponseEntity<byte[]> downloadFile(@RequestParam("id") int id) throws IOException {
+	NoticeboardBean noticeboard = nService.findById(id);
+	byte[] contents = noticeboard.getAttach();
+	HttpHeaders headers = new HttpHeaders();
+	headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+	headers.setContentLength(contents.length);
+	headers.setContentDispositionFormData("attachment", noticeboard.getAttachName());
+	return new ResponseEntity<>(contents, headers, HttpStatus.OK);
+	}
 
 	@GetMapping("/updatepage")
 	public String updatePage(@RequestParam Integer id, Model m) {
@@ -128,17 +153,14 @@ public class NoticeboardController {
 		// 处理文件后缀
 		String expandedName = "";
 		if (uploadContentType.equals("image/pjpeg") || uploadContentType.equals("image/jpeg")) {
-			// IE6上传jpg图片的headimageContentType是image/pjpeg，而IE9以及火狐上传的jpg图片是image/jpeg
 			expandedName = ".jpg";
 		} else if (uploadContentType.equals("image/png") || uploadContentType.equals("image/x-png")) {
-			// IE6上传的png图片的headimageContentType是"image/x-png"
 			expandedName = ".png";
 		} else if (uploadContentType.equals("image/gif")) {
 			expandedName = ".gif";
 		} else if (uploadContentType.equals("image/bmp")) {
 			expandedName = ".bmp";
 		} else {
-			// 文件格式不符合，返回错误信息
 			out.println("<script type=\"text/javascript\">");
 			out.println("window.parent.CKEDITOR.tools.callFunction(" + CKEditorFuncNum + ",'',"
 					+ "'文件格式不正确（必须为.jpg/.gif/.bmp/.png文件）');");
@@ -146,7 +168,6 @@ public class NoticeboardController {
 			return null;
 		}
 
-		// 文件命名并保存到服务器
 		DateFormat df = new SimpleDateFormat("yyyyMMddHHmmss");
 		name = df.format(new Date()) + expandedName;
 //		String DirectoryName = request.getContextPath() + "/tempImag";
@@ -163,7 +184,6 @@ public class NoticeboardController {
 
 		String fileURL = DirectoryName + name;
 
-		// 返回"图像"选项卡和图像在服务器的地址并显示图片
 		out.println("<script type=\"text/javascript\">");
 //		out.println("window.parent.CKEDITOR.tools.callFunction(" + CKEditorFuncNum + ",'" + fileURL + "','')");
 //		out.println("window.parent.CKEDITOR.tools.callFunction(" + CKEditorFuncNum + ",'/uploads/" + fileURL + "',''" + ")");

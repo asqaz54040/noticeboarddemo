@@ -40,10 +40,10 @@
 					<td><label style="display: inline-block; width: 80px;">截止日期:</label>
 						<input type="date" name="expirationDate"></td>
 				</tr>
-<!-- 				<tr> -->
-<!-- 					<td><label style="display: inline-block; width: 80px;">上傳附件:</label> -->
-<!-- 						<input type="file" name="attach"></td> -->
-<!-- 				</tr> -->
+				<tr>
+					<td><label style="display: inline-block; width: 80px;">上傳附件:</label>
+						<input type="file" name="attach"></td>
+				</tr>
 				<tr>
 					<td><label>公佈者:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;administrator</label>
 						<input type="hidden" name="publisher" readonly="readonly"
