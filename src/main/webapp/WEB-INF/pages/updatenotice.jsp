@@ -23,7 +23,7 @@
 <body>
 	<h3 style="text-align: center;">修改公佈事項</h3>
 	<div class="container d-flex justify-content-center">
-		<form action="update" method="post">
+		<form action="update" method="post"  enctype='multipart/form-data'>
 			<table>
 				<tr>
 					<td><input type="hidden" name="id" value="${page.id}"></td>
@@ -43,6 +43,11 @@
 				<tr>
 					<td><label >公佈者:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${page.publisher}</label> <input type="hidden"
 						name="publisher" value="${page.publisher}"></td>
+				</tr>
+					<tr>
+					<td><label style="display: inline-block; width: 80px;">附件:${page.attachName}</label>
+						<input type="file" name="attach">
+					</td>
 				</tr>
 				<tr>
 

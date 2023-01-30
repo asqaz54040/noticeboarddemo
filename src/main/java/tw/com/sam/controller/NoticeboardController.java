@@ -1,7 +1,6 @@
 package tw.com.sam.controller;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -10,13 +9,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.support.PagedListHolder;
 import org.springframework.http.HttpHeaders;
@@ -32,7 +27,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import tw.com.sam.model.bean.NoticeboardBean;
@@ -46,14 +40,14 @@ public class NoticeboardController {
 	@GetMapping("/index")
 	public String dataList(@RequestParam(defaultValue = "1") int pageNumber, Model m) {
 
-	    List<NoticeboardBean> al = nService.selectAll();
-	    PagedListHolder<NoticeboardBean> pageList = new PagedListHolder<NoticeboardBean>(al);
-	    pageList.setPageSize(8);
-	    pageList.setPage(pageNumber - 1);
-	    m.addAttribute("dataList", pageList.getPageList());
-	    m.addAttribute("pageNumber",pageNumber);
-	    m.addAttribute("pageCount",pageList.getPageCount());
-	    return "/index";
+		List<NoticeboardBean> al = nService.selectAll();
+		PagedListHolder<NoticeboardBean> pageList = new PagedListHolder<NoticeboardBean>(al);
+		pageList.setPageSize(8);
+		pageList.setPage(pageNumber - 1);
+		m.addAttribute("dataList", pageList.getPageList());
+		m.addAttribute("pageNumber", pageNumber);
+		m.addAttribute("pageCount", pageList.getPageCount());
+		return "/index";
 	}
 
 	@GetMapping("/addpage")
@@ -67,29 +61,29 @@ public class NoticeboardController {
 //		nService.insert(noticeboard);
 //		return "redirect:/index";
 //	}
-	
+
 	@PostMapping("/add")
-	public String addNote(@ModelAttribute("NoticeboardBean") NoticeboardBean noticeboard,BindingResult result,
-	                      @RequestParam("attach") MultipartFile attach) throws IOException {
-		String fileName=attach.getOriginalFilename();
-		InputStream fileInputStream=attach.getInputStream();
+	public String addNote(@ModelAttribute("NoticeboardBean") NoticeboardBean noticeboard, BindingResult result,
+			@RequestParam(value = "attach", required = false) MultipartFile attach) throws IOException {
+		String fileName = attach.getOriginalFilename();
+		InputStream fileInputStream = attach.getInputStream();
 //		String extension = FilenameUtils.getExtension(fileName);
-		byte [] attachUpload = FileCopyUtils.copyToByteArray(fileInputStream);
+		byte[] attachUpload = FileCopyUtils.copyToByteArray(fileInputStream);
 		noticeboard.setAttachName(fileName);
 		noticeboard.setAttach(attachUpload);
-	    nService.insert(noticeboard);
-	    return "redirect:/index";
+		nService.insert(noticeboard);
+		return "redirect:/index";
 	}
-	
+
 	@GetMapping("/download")
-	public ResponseEntity<byte[]> downloadFile(@RequestParam("id") int id) throws IOException {
-	NoticeboardBean noticeboard = nService.findById(id);
-	byte[] contents = noticeboard.getAttach();
-	HttpHeaders headers = new HttpHeaders();
-	headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-	headers.setContentLength(contents.length);
-	headers.setContentDispositionFormData("attachment", noticeboard.getAttachName());
-	return new ResponseEntity<>(contents, headers, HttpStatus.OK);
+	public ResponseEntity<byte[]> downloadFile(@RequestParam("id") Integer id) throws IOException {
+		NoticeboardBean noticeboard = nService.findById(id);
+		byte[] contents = noticeboard.getAttach();// 存入 byte[] contents
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+		headers.setContentLength(contents.length);
+		headers.setContentDispositionFormData("attachment", noticeboard.getAttachName());
+		return new ResponseEntity<>(contents, headers, HttpStatus.OK);
 	}
 
 	@GetMapping("/updatepage")
@@ -100,20 +94,30 @@ public class NoticeboardController {
 	}
 
 	@PostMapping("/update")
-	public String updateNotice(@ModelAttribute("NoticeboardBean") NoticeboardBean noticeboard) {
-//		updatenote.getTitle();
-//		System.out.println(updatenote.getTitle());
-//		updatenote.getPublisher();
-//		System.out.println(updatenote.getPublisher());
-//		updatenote.getPublishedDate();
-//		System.out.println(updatenote.getPublishedDate());
-//		updatenote.getExpirationDate();
-//		System.out.println(updatenote.getExpirationDate());
-//		updatenote.getContent();
-//		System.out.println(updatenote.getContent());
-		nService.updateNotice(noticeboard);
-		return "redirect:/index";
+	public String updateNotice(@ModelAttribute("NoticeboardBean") NoticeboardBean noticeboard, BindingResult result,
+			@RequestParam(value = "attach", required = false) MultipartFile attach) throws IOException {
+		NoticeboardBean oldNoticeboard = nService.findById(noticeboard.getId());
+		System.out.println(noticeboard.getId());
+		String fileName = attach.getOriginalFilename();
+		InputStream fileInputStream = attach.getInputStream();
+		byte[] attachUpload = FileCopyUtils.copyToByteArray(fileInputStream);
+		if (attach != null && !attach.isEmpty()) {
+			try {	
+				noticeboard.setAttachName(fileName);
+				noticeboard.setAttach(attachUpload);
+				nService.updateNotice(noticeboard);
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw new RuntimeException("檔案上傳發生異常: " + e.getMessage());
+			}
+		} else {
+			noticeboard.setAttach(oldNoticeboard.getAttach());
+			noticeboard.setAttachName(oldNoticeboard.getAttachName());
+			nService.updateNotice(noticeboard);
+		}
+			return "redirect:/index";
 	}
+
 
 	@GetMapping("/delete")
 	public String delete(@RequestParam Integer id) {
@@ -130,22 +134,22 @@ public class NoticeboardController {
 		return "/singlepage";
 
 	}
-	
+
 	@PostMapping("/search")
-	public String searchTitle(@RequestParam("title")String title,Model m) {
+	public String searchTitle(@RequestParam("title") String title, Model m) {
 		List<NoticeboardBean> result = nService.searchTitle(title);
-		if(result.equals(null)) {
+		if (result.equals(null)) {
 			return "redirect:/index";
 		}
-		m.addAttribute("dataList",result);
+		m.addAttribute("dataList", result);
 		return "/index";
 	}
-	
+
 	@RequestMapping("/uploads")
 	public String uploads(@RequestParam("upload") MultipartFile file,
 			@RequestParam("CKEditorFuncNum") String CKEditorFuncNum, HttpServletResponse response,
 			HttpServletRequest request) throws IOException {
-		System.out.println("有文件想要上传");
+		System.out.println("檔案上傳");
 		PrintWriter out = response.getWriter();
 		String name = null;
 		name = new String(file.getOriginalFilename().getBytes("iso-8859-1"), "UTF-8");
@@ -163,7 +167,7 @@ public class NoticeboardController {
 		} else {
 			out.println("<script type=\"text/javascript\">");
 			out.println("window.parent.CKEDITOR.tools.callFunction(" + CKEditorFuncNum + ",'',"
-					+ "'文件格式不正确（必须为.jpg/.gif/.bmp/.png文件）');");
+					+ "'文件格式不正確（必須為.jpg/.gif/.bmp/.png文件）');");
 			out.println("</script>");
 			return null;
 		}
@@ -171,8 +175,8 @@ public class NoticeboardController {
 		DateFormat df = new SimpleDateFormat("yyyyMMddHHmmss");
 		name = df.format(new Date()) + expandedName;
 //		String DirectoryName = request.getContextPath() + "/tempImag";
-		String DirectoryName ="C:\\Temp\\upload\\";
-		System.out.println("DirectoryName++++"+DirectoryName);
+		String DirectoryName = "C:\\Temp\\upload\\";
+		System.out.println("DirectoryName++++" + DirectoryName);
 		try {
 //			File file1 = new File(request.getServletContext().getRealPath("/tempImag"), name);
 			File file1 = new File(DirectoryName, name);
